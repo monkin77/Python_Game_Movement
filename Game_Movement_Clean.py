@@ -150,6 +150,10 @@ while run:
             bullet.x += bullet.vel
         else:
             bullets.pop(bullets.index(bullet))  # remove the bullet  
+    
+    if man.hitbox[0] <= goblin.hitbox[0] + goblin.hitbox[2] and man.hitbox[0] + man.hitbox[2] >= goblin.hitbox[0]:
+        if man.hitbox[1] >= goblin.hitbox[1]:
+            goblin.hit()
 
     keys = pygame.key.get_pressed()
 
