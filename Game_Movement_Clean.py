@@ -1,12 +1,7 @@
 import pygame
-import random
-import math
 pygame.init
 
-width = 500
-height = 480
-
-win = pygame.display.set_mode((width, height))
+win = pygame.display.set_mode((500, 480))
 pygame.display.set_caption("Game Movement")
 
 # Loading images
@@ -19,35 +14,6 @@ bg = pygame.image.load('bg.jpg') # Background
 char = pygame.image.load('standing.png') # character not moving or jumping
 
 clock = pygame.time.Clock()
-
-class spritesheet(object):
-    def __init__(self, filename):
-        try:
-            self.sheet = pygame.image.load(filename).convert()
-        except pygame.error as message:
-            print ('Unable to load spritesheet image:')
-            raise SystemExit
-    # Load a specific image from a specific rectangle
-    def image_at(self, rectangle, colorkey = None):
-        "Loads image from x,y,x+offset,y+offset"
-        rect = pygame.Rect(rectangle)
-        image = pygame.Surface(rect.size).convert()
-        image.blit(self.sheet, (0, 0), rect)
-        if colorkey is not None:
-            if colorkey is -1:
-                colorkey = image.get_at((0,0))
-            image.set_colorkey(colorkey, pygame.RLEACCEL)
-        return image
-    # Load a whole bunch of images and return them as a list
-    def images_at(self, rects, colorkey = None):
-        "Loads multiple images, supply a list of coordinates" 
-        return [self.image_at(rect, colorkey) for rect in rects]
-    # Load a whole strip of images
-    def load_strip(self, rect, image_count, colorkey = None):
-        "Loads a strip of images and returns them as a list"
-        tups = [(rect[0]+rect[2]*x, rect[1], rect[2], rect[3])
-                for x in range(image_count)]
-        return self.images_at(tups, colorkey)
 
 class player(object):
     def __init__(self, x, y, width, height):
@@ -62,6 +28,7 @@ class player(object):
         self.isJump = False
         self.jumpCount = 10
         self.standing = True
+        self.hitbox = (self.x + 17, self.y + 11, 29, 52)
 
     def draw(self, win):
         if self.walkCount + 1 >= 27:    #27
@@ -80,6 +47,8 @@ class player(object):
                 win.blit(walkLeft[0], (self.x, self.y))
             else:
                 win.blit(char, (self.x, self.y))    
+        self.hitbox = (self.x + 17, self.y + 11, 29, 52)
+        pygame.draw.rect(win, (255,0,0), self.hitbox, 2)
 
 
 class projectile(object):
@@ -106,6 +75,7 @@ class enemy(object):
         self.path = [self.x, self.end]
         self.walkCount = 0
         self.vel = 3
+        self.hitbox = (self.x + 17, self.y + 2, 31, 57)
     
     def draw(self, win):
         self.move()
@@ -118,7 +88,9 @@ class enemy(object):
             win.blit(self.walkLeft[self.walkCount //3], (self.x, self.y))
             self.walkCount += 1
 
-        pass
+        self.hitbox = (self.x + 17, self.y + 2, 31, 57)
+        pygame.draw.rect(win, (255,0,0), self.hitbox, 2)
+
     def move(self):
         if self.vel > 0:
             if self.x + self.vel < self.path[1]:
@@ -132,58 +104,9 @@ class enemy(object):
             else:
                 self.vel = self.vel * -1
                 self.walkCount = 0
-
-
+    def hit(self):
+        print("hit")
         pass
-
-
-ss = spritesheet('rat and bat spritesheet calciumtrice.png')
-class enemy2(object):
-    coordinates = []
-    walkRight = []
-    for x in range(10):
-        coordinates.append((x*32, 160,32,32))
-    print(coordinates)
-    walkRight = ss.images_at(coordinates, colorkey=(255,255,255))
-    def __init__(self, to_attack):
-        self.speed = 5
-        self.x = random.randint(0, width)
-        self.goal_x = random.randint(0, width)
-        self.y = 10
-        self.attacking = 1
-        self.to_attack = to_attack
-        self.walkCount = 0
-
-    def draw(self, win):
-        self.move(self.to_attack.x, self.to_attack.y +10)
-##        print(self.x, self.y)
-##        print(self.attacking)
-        win.blit(self.walkRight[self.walkCount % 10], (self.x, self.y))
-        self.walkCount = (self.walkCount + 1) % 10
-
-    def move(self, x, y): #x and y of the player
-        if self.attacking:
-            if self.y > (y - 10):
-                self.attacking = False
-                self.goal_x = random.randint(0,width)
-            else:
-                vel = self.get_vel(self.x, self.y, x, y)
-                self.x = self.x + vel[0]
-                self.y = self.y + vel[1]      
-        else:
-            if self.y < 10:
-                self.attacking = True
-            else:
-                vel = self.get_vel(self.x, self.y, self.goal_x, 10)
-                self.x = self.x + 2 * vel[0]
-                self.y = self.y + 2 * vel[1]
-                
-
-    def get_vel(self, x1, y1, x2, y2):
-        angle = math.atan2(y2-y1, x2-x1)
-        x_vel = math.cos(angle) * self.speed
-        y_vel = math.sin(angle) * self.speed
-        return [x_vel, y_vel]
 
 
 def redrawGameWindow():
@@ -191,7 +114,6 @@ def redrawGameWindow():
     win.blit(bg, (0,0))
     man.draw(win)          # Player
     goblin.draw(win)
-    bat.draw(win)
     for bullet in bullets:
         bullet.draw(win) 
 
@@ -201,18 +123,29 @@ def redrawGameWindow():
 
 man = player(300, 410, 64, 64)  # Character Specs (x,y,width,height)
 goblin = enemy(100, 410, 64, 64, 450)
-bat = enemy2(man)
+shootCount = 0
 bullets =  []
 run = True
 
 while run:
     clock.tick(27)  #27
 
+    if shootCount > 0:
+        shootCount += 1
+    if shootCount > 4:
+        shootCount = 0
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
 
     for bullet in bullets:
+        if bullet.y - bullet.radius < goblin.hitbox[1] + goblin.hitbox[3] and bullet.y + bullet.radius > goblin.hitbox[1]:
+            if bullet.x + bullet.radius > goblin.hitbox[0] and bullet.x - bullet.radius < goblin.hitbox[0] + goblin.hitbox[2]:
+                goblin.hit()
+                bullets.pop(bullets.index(bullet))  # remove the bullet  
+
+
         if bullet.x < 500 and bullet.x > 0:
             bullet.x += bullet.vel
         else:
@@ -220,13 +153,14 @@ while run:
 
     keys = pygame.key.get_pressed()
 
-    if keys[pygame.K_SPACE]:
+    if keys[pygame.K_SPACE] and shootCount == 0:
         if man.left: 
             facing = -1
         else:
             facing = 1
         if len(bullets) < 50:
             bullets.append(projectile(round(man.x + man.width // 2), round(man.y + man.height // 2), 6, (0,0,0), facing))
+        shootCount = 1
 
     if keys[pygame.K_LEFT] and man.x >= man.vel:
         man.x -= man.vel
@@ -266,8 +200,6 @@ while run:
 
 
 pygame.quit()
-
-
 
 
 
