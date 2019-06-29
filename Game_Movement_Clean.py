@@ -64,6 +64,7 @@ bat_coordinates = []
 for x in range(10):
     bat_coordinates.append((x*32, 160,32,32))
 setattr(bat_animation, 'walkRight', bat_ss.images_at(bat_coordinates, colorkey=(255,255,255)))
+setattr(bat_animation, 'walkLeft', bat_ss.images_at(bat_coordinates, colorkey=(255,255,255)))
 
 
 rat_ss = spritesheet('rat and bat spritesheet calciumtrice.png')
@@ -72,6 +73,7 @@ rat_coordinates = []
 for x in range(10):
     rat_coordinates.append((x*32, 96,32,32))
 setattr(rat_animation, 'walkRight', rat_ss.images_at(rat_coordinates, colorkey=(255,255,255)))
+setattr(rat_animation, 'walkLeft', rat_ss.images_at(rat_coordinates, colorkey=(255,255,255)))
 
 class player(object):
     def __init__(self, x, y, width, height):
@@ -128,25 +130,38 @@ class enemy(object):
         self.x = x
         self.y = y
         self.walkCount = 0
+        self.x_vel = 0
+        self.y_vel = 0
+        self.animation = ''
+        self.hitbox = (x, y, width, height)
 
-        self.hitbox = (self.x + 17, self.y + 2, 31, 57)
-    
     def draw(self, win):
-        self.move()
-        if self.walkCount >= 33:        #33
-            self.walkCount = 0
-        if self.vel > 0:
-            win.blit(self.images.walkRight[self.walkCount // 3], (self.x,self.y))
-            self.walkCount += 1
+        if self.x_vel > 0:
+            win.blit(self.images.walkRight[self.walkCount % len(self.images.walkRight)], (self.x, self.y))
+            if self.animation != 'walkRight':
+                self.walkCount = 0
+                self.animation = 'walkRight'
+        elif self.x_vel < 0:
+            win.blit(self.images.walkLeft[self.walkCount % len(self.images.walkLeft)], (self.x, self.y))
+            if self.animation != 'walkLeft':
+                self.walkCount = 0
+                self.animation = 'walkLeft'
         else:
-            win.blit(self.images.walkLeft[self.walkCount //3], (self.x, self.y))
-            self.walkCount += 1
-
-        self.hitbox = (self.x + 17, self.y + 2, 31, 57)
+            return
+        self.walkCount = (self.walkCount +1) % len(getattr(self.images, self.animation))
+        self.hitbox = self.getHitbox()
         pygame.draw.rect(win, (255,0,0), self.hitbox, 2)
 
-    def move(self, x, y):
+    #Used for sprites whose images is not centered, so needs offset
+    def getHitbox(self):
+            return(self.x, self.y, self.width, self.height)    
+
+    def move(self):
         return
+
+    def tick(self, win):
+        self.draw(win)
+        self.move()
 
 class enemy_ground(enemy):
 
@@ -158,7 +173,7 @@ class enemy_ground(enemy):
         self.path = [self.x, self.end]
 
     def move(self):
-        if self.vel > 0:
+        if self.x_vel > 0:
             if self.x + self.vel < self.path[1]:
                 self.x += self.vel
             else:
@@ -168,20 +183,25 @@ class enemy_ground(enemy):
             if self.x - self.vel > self.path[0]:
                 self.x += self.vel
             else:
-                self.vel = self.vel * -1
+                self.x_vel = self.vel * -1
                 self.walkCount = 0
 
     def hit(self):
         print("hit")
         pass
 
-class goblin(enemy_ground):
-    #goblin_animation.walkRight = [pygame.image.load('R1E.png'), pygame.image.load('R2E.png'), pygame.image.load('R3E.png'), pygame.image.load('R4E.png'), pygame.image.load('R5E.png'), pygame.image.load('R6E.png'), pygame.image.load('R7E.png'), pygame.image.load('R8E.png'), pygame.image.load('R9E.png'), pygame.image.load('R10E.png'), pygame.image.load('R11E.png')]
-    #goblin_animation.walkLeft = [pygame.image.load('L1E.png'), pygame.image.load('L2E.png'), pygame.image.load('L3E.png'), pygame.image.load('L4E.png'), pygame.image.load('L5E.png'), pygame.image.load('L6E.png'), pygame.image.load('L7E.png'), pygame.image.load('L8E.png'), pygame.image.load('L9E.png'), pygame.image.load('L10E.png'), pygame.image.load('L11E.png')]
+    def tick(self, win):
+        self.move()
+        self.draw(win)
 
+
+class goblin(enemy_ground):
     
     def __init__(self, x, y, end):
-        super(goblin, self).__init__(goblin_animation, x, y, 64, 64, end)
+        super(goblin, self).__init__(goblin_animation, x, y, 32, 64, end)
+
+    def getHitbox(self):
+        return (self.x+20, self.y, self.width, self.height)
 
 class rat(enemy_ground):
 
@@ -201,34 +221,32 @@ class enemy_flying(enemy):
         self.to_attack = to_attack
         self.walkCount = 0
 
-    def draw(self, win):
-        self.move(self.to_attack.x, self.to_attack.y +10)
-        win.blit(self.images.walkRight[self.walkCount % 10], (self.x, self.y))
-        self.walkCount = (self.walkCount + 1) % 10
-
     def move(self, x, y): #x and y of the player
         if self.attacking:
             if self.y > (y - 10):
                 self.attacking = False
                 self.goal_x = random.randint(0, win_width)
             else:
-                vel = self.get_vel(self.x, self.y, x, y)
-                self.x = self.x + vel[0]
-                self.y = self.y + vel[1]      
+                self.get_vel(self.x, self.y, x, y)
+                self.x += self.x_vel
+                self.y += self.y_vel    
         else:
             if self.y < 10:
                 self.attacking = True
             else:
-                vel = self.get_vel(self.x, self.y, self.goal_x, 10)
-                self.x = self.x + 2 * vel[0]
-                self.y = self.y + 2 * vel[1]
+                self.get_vel(self.x, self.y, self.goal_x, 10)
+                self.x += 2 * self.x_vel
+                self.y += 2 * self.y_vel
                 
 
     def get_vel(self, x1, y1, x2, y2):
         angle = math.atan2(y2-y1, x2-x1)
-        x_vel = math.cos(angle) * self.speed
-        y_vel = math.sin(angle) * self.speed
-        return [x_vel, y_vel]
+        self.x_vel = math.cos(angle) * self.speed
+        self.y_vel = math.sin(angle) * self.speed
+
+    def tick(self, win):
+        self.draw(win)
+        self.move(self.to_attack.x, self.to_attack.y +10)
 
 class bat(enemy_flying):
 
@@ -239,8 +257,8 @@ def redrawGameWindow():
     global walkCount        #defines the variable in the whole code
     win.blit(bg, (0,0))
     man.draw(win)          # Player
-    goblin1.draw(win)
-    bat1.draw(win)
+    goblin1.tick(win)
+    bat1.tick(win)
     for bullet in bullets:
         bullet.draw(win) 
 
