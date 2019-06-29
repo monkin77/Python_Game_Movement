@@ -3,8 +3,8 @@ import random
 import math
 pygame.init
 
-width = 500
-height = 480
+win_width = 500
+win_height = 480
 
 win = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Game Movement")
@@ -194,8 +194,8 @@ class enemy_flying(enemy):
     def __init__(self, images, to_attack, x , witdh, height):
         super(enemy_flying, self).__init__(images, x, 10, width, height)
         self.speed = 5
-        self.x = random.randint(0, width)
-        self.goal_x = random.randint(0, width)
+        self.x = random.randint(0, win_width)
+        self.goal_x = random.randint(0, win_width)
         self.attacking = 1
         self.to_attack = to_attack
         self.walkCount = 0
@@ -211,7 +211,7 @@ class enemy_flying(enemy):
         if self.attacking:
             if self.y > (y - 10):
                 self.attacking = False
-                self.goal_x = random.randint(0,width)
+                self.goal_x = random.randint(0, win_width)
             else:
                 vel = self.get_vel(self.x, self.y, x, y)
                 self.x = self.x + vel[0]
