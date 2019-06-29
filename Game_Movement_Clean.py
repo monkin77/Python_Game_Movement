@@ -1,7 +1,12 @@
 import pygame
+import random
+import math
 pygame.init
 
-win = pygame.display.set_mode((500, 480))
+width = 500
+height = 480
+
+win = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Game Movement")
 
 # Loading images
@@ -14,6 +19,35 @@ bg = pygame.image.load('bg.jpg') # Background
 char = pygame.image.load('standing.png') # character not moving or jumping
 
 clock = pygame.time.Clock()
+
+class spritesheet(object):
+    def __init__(self, filename):
+        try:
+            self.sheet = pygame.image.load(filename).convert()
+        except pygame.error as message:
+            print ('Unable to load spritesheet image:')
+            raise SystemExit
+    # Load a specific image from a specific rectangle
+    def image_at(self, rectangle, colorkey = None):
+        "Loads image from x,y,x+offset,y+offset"
+        rect = pygame.Rect(rectangle)
+        image = pygame.Surface(rect.size).convert()
+        image.blit(self.sheet, (0, 0), rect)
+        if colorkey is not None:
+            if colorkey is -1:
+                colorkey = image.get_at((0,0))
+            image.set_colorkey(colorkey, pygame.RLEACCEL)
+        return image
+    # Load a whole bunch of images and return them as a list
+    def images_at(self, rects, colorkey = None):
+        "Loads multiple images, supply a list of coordinates" 
+        return [self.image_at(rect, colorkey) for rect in rects]
+    # Load a whole strip of images
+    def load_strip(self, rect, image_count, colorkey = None):
+        "Loads a strip of images and returns them as a list"
+        tups = [(rect[0]+rect[2]*x, rect[1], rect[2], rect[3])
+                for x in range(image_count)]
+        return self.images_at(tups, colorkey)
 
 class player(object):
     def __init__(self, x, y, width, height):
@@ -103,11 +137,61 @@ class enemy(object):
         pass
 
 
+ss = spritesheet('rat and bat spritesheet calciumtrice.png')
+class enemy2(object):
+    coordinates = []
+    walkRight = []
+    for x in range(10):
+        coordinates.append((x*32, 160,32,32))
+    print(coordinates)
+    walkRight = ss.images_at(coordinates, colorkey=(255,255,255))
+    def __init__(self, to_attack):
+        self.speed = 5
+        self.x = random.randint(0, width)
+        self.goal_x = random.randint(0, width)
+        self.y = 10
+        self.attacking = 1
+        self.to_attack = to_attack
+        self.walkCount = 0
+
+    def draw(self, win):
+        self.move(self.to_attack.x, self.to_attack.y +10)
+##        print(self.x, self.y)
+##        print(self.attacking)
+        win.blit(self.walkRight[self.walkCount % 10], (self.x, self.y))
+        self.walkCount = (self.walkCount + 1) % 10
+
+    def move(self, x, y): #x and y of the player
+        if self.attacking:
+            if self.y > (y - 10):
+                self.attacking = False
+                self.goal_x = random.randint(0,width)
+            else:
+                vel = self.get_vel(self.x, self.y, x, y)
+                self.x = self.x + vel[0]
+                self.y = self.y + vel[1]      
+        else:
+            if self.y < 10:
+                self.attacking = True
+            else:
+                vel = self.get_vel(self.x, self.y, self.goal_x, 10)
+                self.x = self.x + 2 * vel[0]
+                self.y = self.y + 2 * vel[1]
+                
+
+    def get_vel(self, x1, y1, x2, y2):
+        angle = math.atan2(y2-y1, x2-x1)
+        x_vel = math.cos(angle) * self.speed
+        y_vel = math.sin(angle) * self.speed
+        return [x_vel, y_vel]
+
+
 def redrawGameWindow():
     global walkCount        #defines the variable in the whole code
     win.blit(bg, (0,0))
     man.draw(win)          # Player
     goblin.draw(win)
+    bat.draw(win)
     for bullet in bullets:
         bullet.draw(win) 
 
@@ -117,6 +201,7 @@ def redrawGameWindow():
 
 man = player(300, 410, 64, 64)  # Character Specs (x,y,width,height)
 goblin = enemy(100, 410, 64, 64, 450)
+bat = enemy2(man)
 bullets =  []
 run = True
 
@@ -181,6 +266,8 @@ while run:
 
 
 pygame.quit()
+
+
 
 
 
