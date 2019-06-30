@@ -53,9 +53,15 @@ class spritesheet(object):
                 for x in range(image_count)]
         return self.images_at(tups, colorkey)
     
+goblin_walkRight = []
+goblin_walkLeft = []
+for x in range(1,11):
+    for y in range(3):
+        goblin_walkRight.append(pygame.image.load('R' + str(x) + 'E.png')) 
+        goblin_walkLeft.append(pygame.image.load('L' + str(x) + 'E.png'))    
 goblin_animation = Object()
-setattr(goblin_animation, 'walkRight', [pygame.image.load('R1E.png'), pygame.image.load('R2E.png'), pygame.image.load('R3E.png'), pygame.image.load('R4E.png'), pygame.image.load('R5E.png'), pygame.image.load('R6E.png'), pygame.image.load('R7E.png'), pygame.image.load('R8E.png'), pygame.image.load('R9E.png'), pygame.image.load('R10E.png'), pygame.image.load('R11E.png')])
-setattr(goblin_animation, 'walkLeft', [pygame.image.load('L1E.png'), pygame.image.load('L2E.png'), pygame.image.load('L3E.png'), pygame.image.load('L4E.png'), pygame.image.load('L5E.png'), pygame.image.load('L6E.png'), pygame.image.load('L7E.png'), pygame.image.load('L8E.png'), pygame.image.load('L9E.png'), pygame.image.load('L10E.png'), pygame.image.load('L11E.png')])
+setattr(goblin_animation, 'walkRight', goblin_walkRight)
+setattr(goblin_animation, 'walkLeft', goblin_walkLeft)
 
 
 bat_ss = spritesheet('rat and bat spritesheet calciumtrice.png')
@@ -168,22 +174,22 @@ class enemy_ground(enemy):
     def __init__(self, images, x, y, width, height, end):
         super(enemy_ground, self).__init__(images, x, y, width, height)
         self.height = height
-        self.vel = 3
         self.end = end
         self.path = [self.x, self.end]
+        self.x_vel = 3
 
     def move(self):
         if self.x_vel > 0:
-            if self.x + self.vel < self.path[1]:
-                self.x += self.vel
+            if self.x + self.x_vel < self.path[1]:
+                self.x += self.x_vel
             else:
-                self.vel = self.vel * -1
+                self.x_vel *= -1
                 self.walkCount = 0
         else:
-            if self.x - self.vel > self.path[0]:
-                self.x += self.vel
+            if self.x - self.x_vel > self.path[0]:
+                self.x += self.x_vel
             else:
-                self.x_vel = self.vel * -1
+                self.x_vel = self.x_vel * -1
                 self.walkCount = 0
 
     def hit(self):
