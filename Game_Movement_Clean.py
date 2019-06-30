@@ -79,7 +79,7 @@ class enemy(object):
         self.walkCount = 0
         self.vel = 3
         self.hitbox = (self.x + 17, self.y + 2, 31, 57)
-        self.health = 9  #not 10 because of the loop reading order
+        self.health = 9  #not 10 because of the loop reading order since if we count from 10 to 0 there are 11 elements
         self.visible = True
     
     def draw(self, win):
@@ -96,7 +96,7 @@ class enemy(object):
                 self.walkCount += 1
 
             pygame.draw.rect(win, (255,0,0), (self.hitbox[0], self.hitbox[1] - 20, 50,10))
-            pygame.draw.rect(win, (0,128,0), (self.hitbox[0], self.hitbox[1] - 20, (5 * (self.health + 1)),10))
+            pygame.draw.rect(win, (0,128,0), (self.hitbox[0], self.hitbox[1] - 20, (5 * (self.health + 1)),10))     # Width of the green rectange is lowering
             self.hitbox = (self.x + 17, self.y + 2, 31, 57)
             #pygame.draw.rect(win, (255,0,0), self.hitbox, 2)
 
@@ -119,6 +119,8 @@ class enemy(object):
             self.health -= 1
         else:
             self.visible = False
+            
+            
 
 def redrawGameWindow():
     global walkCount        #defines the variable in the whole code
@@ -153,12 +155,13 @@ while run:
             run = False
 
     for bullet in bullets:
-        if bullet.y - bullet.radius < goblin.hitbox[1] + goblin.hitbox[3] and bullet.y + bullet.radius > goblin.hitbox[1]:
-            if bullet.x + bullet.radius > goblin.hitbox[0] and bullet.x - bullet.radius < goblin.hitbox[0] + goblin.hitbox[2]:
-                goblin.hit()
-                score += 1
+        if goblin.visible:
+            if bullet.y - bullet.radius < goblin.hitbox[1] + goblin.hitbox[3] and bullet.y + bullet.radius > goblin.hitbox[1]:
+                if bullet.x + bullet.radius > goblin.hitbox[0] and bullet.x - bullet.radius < goblin.hitbox[0] + goblin.hitbox[2]:
+                    goblin.hit()
+                    score += 1
 
-                bullets.pop(bullets.index(bullet))  # remove the bullet  
+                    bullets.pop(bullets.index(bullet))  # remove the bullet  
 
 
         if bullet.x < 500 and bullet.x > 0:
