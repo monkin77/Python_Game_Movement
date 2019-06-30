@@ -1,7 +1,7 @@
 import pygame
 import math
 import random
-pygame.init
+pygame.init()
 
 win_width = 500
 win_height = 480
@@ -80,6 +80,8 @@ for x in range(10):
     rat_coordinates.append((x*32, 96,32,32))
 setattr(rat_animation, 'walkRight', rat_ss.images_at(rat_coordinates, colorkey=(255,255,255)))
 setattr(rat_animation, 'walkLeft', rat_ss.images_at(rat_coordinates, colorkey=(255,255,255)))
+score = 0 # keeps track of how many bullets hit the enemy
+
 
 class player(object):
     def __init__(self, x, y, width, height):
@@ -95,6 +97,9 @@ class player(object):
         self.jumpCount = 10
         self.standing = True
         self.hitbox = (self.x + 17, self.y + 11, 29, 52)
+        self.health = 20
+        self.visible = True
+        
 
     def draw(self, win):
         if self.walkCount + 1 >= 27:    #27
@@ -114,7 +119,15 @@ class player(object):
             else:
                 win.blit(char, (self.x, self.y))    
         self.hitbox = (self.x + 17, self.y + 11, 29, 52)
-        pygame.draw.rect(win, (255,0,0), self.hitbox, 2)
+        pygame.draw.rect(win, (0, 0,128), (self.hitbox[0], self.hitbox[1] - 20, (5 * (self.health + 1)),10))
+        #pygame.draw.rect(win, (255,0,0), self.hitbox, 2)
+
+    def hit(self):
+        if self.health > 0:
+            self.health -= 1
+        else:
+            self.visible = False
+        pass
 
 
 class projectile(object):
@@ -140,6 +153,9 @@ class enemy(object):
         self.y_vel = 0
         self.animation = ''
         self.hitbox = (x, y, width, height)
+        self.health = 9  #not 10 because of the loop reading order
+        self.visible = True
+    
 
     def draw(self, win):
         if self.x_vel > 0:
@@ -157,6 +173,7 @@ class enemy(object):
         self.walkCount = (self.walkCount +1) % len(getattr(self.images, self.animation))
         self.hitbox = self.getHitbox()
         pygame.draw.rect(win, (255,0,0), self.hitbox, 2)
+        pygame.draw.rect(win, (0,128,0), (self.hitbox[0], self.hitbox[1] - 20, (5 * (self.health + 1)),10))
 
     #Used for sprites whose images is not centered, so needs offset
     def getHitbox(self):
@@ -165,9 +182,19 @@ class enemy(object):
     def move(self):
         return
 
+
+    def hit(self):
+        if self.health > 0:
+            self.health -= 1
+        else:
+            self.visible = False
+        pass
+
     def tick(self, win):
-        self.draw(win)
-        self.move()
+        if self.visible == True:
+            self.draw(win)
+            self.move()
+
 
 class enemy_ground(enemy):
 
@@ -191,15 +218,6 @@ class enemy_ground(enemy):
             else:
                 self.x_vel = self.x_vel * -1
                 self.walkCount = 0
-
-    def hit(self):
-        print("hit")
-        pass
-
-    def tick(self, win):
-        self.move()
-        self.draw(win)
-
 
 class goblin(enemy_ground):
     
@@ -252,25 +270,14 @@ class enemy_flying(enemy):
 
     def tick(self, win):
         self.draw(win)
-        self.move(self.to_attack.x, self.to_attack.y +10)
+        self.move(self.to_attack.x, self.to_attack.y + self.to_attack.height)
 
 class bat(enemy_flying):
 
     def __init__(self, to_attack):
         super(bat, self).__init__(bat_animation, to_attack, x, 32, 32)
-
-def redrawGameWindow():
-    global walkCount        #defines the variable in the whole code
-    win.blit(bg, (0,0))
-    man.draw(win)          # Player
-    goblin1.tick(win)
-    bat1.tick(win)
-    for bullet in bullets:
-        bullet.draw(win) 
-
-    pygame.display.update()
-
 #Main Loop
+font = pygame.font.SysFont('comicsans', 30, True) #(font, size, bold, italicized)
 man = player(300, 410, 64, 64)  # Character Specs (x,y,width,height)
 goblin1 = goblin(100, 410, 450)
 #goblin = enemy(100, 410, 64, 64, 450)
@@ -278,80 +285,109 @@ bat1 = bat(man)
 bullets =  []
 run = True
 shootCount = 0
+enemies = []
+enemies.extend([goblin1, bat1])
+
+def redrawGameWindow():
+    global walkCount        #defines the variable in the whole code
+    win.blit(bg, (0,0))
+    text = font.render("Score: " + str(score), 1, (0,0,0))
+    
+    win.blit(text, (390,10))
+    if (man.visible):
+        man.draw(win)         # Player
+    else:
+        gameover = 'Game Over'
+        text = font.render(gameover, 1, (0,0,0))
+        gameover_size = font.size(gameover)
+        win.blit(text, ((win_width - gameover_size[0]) / 2, (win_height - gameover_size[1]) / 2))
+    for enemy in enemies:
+        enemy.tick(win)
+    for bullet in bullets:
+        bullet.draw(win) 
+
+    pygame.display.update()
+
 
 while run:
     clock.tick(27)  #27
 
-    if shootCount > 0:
-        shootCount += 1
-    if shootCount > 4:
-        shootCount = 0
+    if(man.visible):
+        if shootCount > 0:
+            shootCount += 1
+        if shootCount > 4:
+            shootCount = 0
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
 
-    for bullet in bullets:
-        if bullet.y - bullet.radius < goblin1.hitbox[1] + goblin1.hitbox[3] and bullet.y + bullet.radius > goblin1.hitbox[1]:
-            if bullet.x + bullet.radius > goblin1.hitbox[0] and bullet.x - bullet.radius < goblin1.hitbox[0] + goblin1.hitbox[2]:
-                goblin1.hit()
-                bullets.pop(bullets.index(bullet))  # remove the bullet  
+        for enemy in enemies:
+            for bullet in bullets:
+                
+                if bullet.y - bullet.radius < enemy.hitbox[1] + enemy.hitbox[3] and bullet.y + bullet.radius > enemy.hitbox[1]:
+                    if bullet.x + bullet.radius > enemy.hitbox[0] and bullet.x - bullet.radius < enemy.hitbox[0] + enemy.hitbox[2]:
+                        enemy.hit()
+                        bullets.pop(bullets.index(bullet))  # remove the bullet  
 
 
-        if bullet.x < 500 and bullet.x > 0:
-            bullet.x += bullet.vel
-        else:
-            bullets.pop(bullets.index(bullet))  # remove the bullet  
-    
-    if man.hitbox[0] <= goblin1.hitbox[0] + goblin1.hitbox[2] and man.hitbox[0] + man.hitbox[2] >= goblin1.hitbox[0]:
-        if man.hitbox[1] >= goblin1.hitbox[1]:
-            goblin1.hit()
+                if bullet.x < 500 and bullet.x > 0:
+                    bullet.x += bullet.vel
+                else:
+                    bullets.pop(bullets.index(bullet))  # remove the bullet  
+            
+            if not (man.hitbox[0] > enemy.hitbox[0] + enemy.hitbox[2] or man.hitbox[0] + man.hitbox[2] < enemy.hitbox[0] or man.hitbox[1] > enemy.hitbox[1] + enemy.hitbox[3] or man.hitbox[1] + man.hitbox[3] < enemy.hitbox[1]): #Checks for intersection with Separting Axis Theorem https://stackoverflow.com/a/40795835/10096219
+                man.hit()
+            '''
+            if man.hitbox[0] <= enemy.hitbox[0] + enemy.hitbox[2] and man.hitbox[0] + man.hitbox[2] >= enemy.hitbox[0]:
+                if man.hitbox[1] >= enemy.hitbox[1]:
+                    man.hit()
+            '''
+        keys = pygame.key.get_pressed()
 
-    keys = pygame.key.get_pressed()
+        if keys[pygame.K_SPACE] and shootCount == 0:
+            if man.left: 
+                facing = -1
+            else:
+                facing = 1
+            if len(bullets) < 50:
+                bullets.append(projectile(round(man.x + man.width // 2), round(man.y + man.height // 2), 6, (0,0,0), facing))
+            shootCount = 1
 
-    if keys[pygame.K_SPACE] and shootCount == 0:
-        if man.left: 
-            facing = -1
-        else:
-            facing = 1
-        if len(bullets) < 50:
-            bullets.append(projectile(round(man.x + man.width // 2), round(man.y + man.height // 2), 6, (0,0,0), facing))
-        shootCount = 1
-
-    if keys[pygame.K_LEFT] and man.x >= man.vel:
-        man.x -= man.vel
-        man.left = True
-        man.right = False
-        man.standing = False
-    elif keys[pygame.K_RIGHT] and man.x < 500 - man.width - man.vel:
-        man.x += man.vel
-        man.left = False
-        man.right = True
-        man.standing = False
-    else: 
-        man.standing = True 
-        man.walkCount = 0
-
-    if not(man.isJump):
-                    #   if keys[pygame.K_UP] and y > 0:            
-                    #       y -= vel
-                    #   if keys[pygame.K_DOWN] and y < 440:
-                    #       y += vel
-        if keys[pygame.K_UP]:
-            man.isJump = True
+        if keys[pygame.K_LEFT] and man.x >= man.vel:
+            man.x -= man.vel
+            man.left = True
             man.right = False
+            man.standing = False
+        elif keys[pygame.K_RIGHT] and man.x < 500 - man.width - man.vel:
+            man.x += man.vel
             man.left = False
+            man.right = True
+            man.standing = False
+        else: 
+            man.standing = True 
             man.walkCount = 0
-    else:
-        if man.jumpCount >= -10:
-            neg = 1
-            if man.jumpCount < 0:
-                neg = -1 
-            man.y -= (man.jumpCount ** 2) * 0.5* neg
-            man.jumpCount -= 1
-        else:
-            man.isJump = False
-            man.jumpCount = 10
-    redrawGameWindow()
 
+        if not(man.isJump):
+                        #   if keys[pygame.K_UP] and y > 0:            
+                        #       y -= vel
+                        #   if keys[pygame.K_DOWN] and y < 440:
+                        #       y += vel
+            if keys[pygame.K_UP]:
+                man.isJump = True
+                man.right = False
+                man.left = False
+                man.walkCount = 0
+        else:
+            if man.jumpCount >= -10:
+                neg = 1
+                if man.jumpCount < 0:
+                    neg = -1 
+                man.y -= (man.jumpCount ** 2) * 0.5* neg
+                man.jumpCount -= 1
+            else:
+                man.isJump = False
+                man.jumpCount = 10
+
+    redrawGameWindow()
 pygame.quit()
