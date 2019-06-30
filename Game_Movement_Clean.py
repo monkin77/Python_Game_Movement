@@ -19,6 +19,7 @@ bulletSound = pygame.mixer.Sound('bullet.wav')
 hitSound = pygame.mixer.Sound('hit.wav')
 
 music = pygame.mixer.music.load('music.mp3')
+pygame.mixer.music.set_volume(0.2)
 
 pygame.mixer.music.play(-1) # the "-1" will continuously play the music
 
@@ -196,6 +197,7 @@ while run:
         if man.hitbox[0] <= goblin.hitbox[0] + goblin.hitbox[2] and man.hitbox[0] + man.hitbox[2] >= goblin.hitbox[0]:
             if man.hitbox[1] >= goblin.hitbox[1]:
                 man.hit()
+                score -= 5
 
     keys = pygame.key.get_pressed()
 
