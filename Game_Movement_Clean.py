@@ -19,7 +19,7 @@ bulletSound = pygame.mixer.Sound('bullet.wav')
 hitSound = pygame.mixer.Sound('hit.wav')
 
 music = pygame.mixer.music.load('music.mp3')
-pygame.mixer.music.set_volume(0.2)
+pygame.mixer.music.set_volume(0.05)
 
 pygame.mixer.music.play(-1) # the "-1" will continuously play the music
 
@@ -78,7 +78,7 @@ class player(object):
                     pygame.quit()
 
 class projectile(object):
-    def __init__ (self, x , y, radius, color, facing):
+    def __init__(self, x , y, radius, color, facing):
         self.x = x
         self.y = y
         self.radius = radius
@@ -142,6 +142,26 @@ class enemy(object):
             self.health -= 1
         else:
             self.visible = False
+
+class platforms(object):
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.hitbox = (self.x, self.y, self.width, self.height)
+        self.landing = False
+    def draw(self, win):
+        pygame.draw.rect(win, (150,0,0), (self.x, self.y, self.width, self.height))
+        if self.landing == True: 
+            man.isJump = False
+
+    def collision(self):
+        if man.x < platform1.hitbox[0] + platform1.hitbox[2] and man.x + man.width > platform1.hitbox[0]:
+            if man.y + height == platform1.hitbox[1]:
+                self.landing = True
+
+
             
             
 
@@ -149,9 +169,10 @@ def redrawGameWindow():
     global walkCount        #defines the variable in the whole code
     win.blit(bg, (0,0))
     text = font.render("Score: " + str(score), 1, (0,0,0))
-    win.blit(text, (390,10))
+    win.blit(text, (380,10))
     man.draw(win)          # Player
     goblin.draw(win)
+    platform1.draw(win)
     for bullet in bullets:
         bullet.draw(win) 
 
@@ -161,6 +182,7 @@ def redrawGameWindow():
 font = pygame.font.SysFont('comicsans', 30, True) #(font, size, bold, italicized)
 man = player(300, 410, 64, 64)  # Character Specs (x,y,width,height)
 goblin = enemy(100, 410, 64, 64, 450)
+platform1 = platforms(100, 350, 80, 10)
 shootCount = 0
 bullets =  []
 run = True
@@ -199,6 +221,8 @@ while run:
                 man.hit()
                 score -= 5
 
+
+
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_SPACE] and shootCount == 0:
@@ -235,7 +259,7 @@ while run:
             man.right = False
             man.left = False
             man.walkCount = 0
-    else:
+    else:                                       #If jumping
         if man.jumpCount >= -10:
             neg = 1
             if man.jumpCount < 0:
