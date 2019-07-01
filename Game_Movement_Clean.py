@@ -143,27 +143,28 @@ class enemy(object):
         else:
             self.visible = False
 
-class platforms(object):
-    def __init__(self, x, y, width, height):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.hitbox = (self.x, self.y, self.width, self.height)
-        self.landing = False
-    def draw(self, win):
-        pygame.draw.rect(win, (150,0,0), (self.x, self.y, self.width, self.height))
-        if self.landing == True: 
-            man.isJump = False
+#class platforms(object):
+    #def __init__(self, x, y, width, height):
+        #self.x = x
+        #self.y = y
+        #self.width = width
+        #self.height = height
+        #self.hitbox = (self.x, self.y, self.width, self.height)
+        #self.landing = False
+    #def draw(self, win):
+        #pygame.draw.rect(win, (150,0,0), (self.x, self.y, self.width, self.height))
+        #if self.landing == True: 
+            #man.isJump = False
+        
+        # pygame.draw.rect(win, (100,110,110), self.hitbox)       
 
-    def collision(self):
-        if man.x < platform1.hitbox[0] + platform1.hitbox[2] and man.x + man.width > platform1.hitbox[0]:
-            if man.y + height == platform1.hitbox[1]:
-                self.landing = True
+    #def collision(self):
+        #if man.x < platform1.hitbox[0] + platform1.hitbox[2] and man.x + man.width > platform1.hitbox[0]:
+            #if man.y + height == platform1.hitbox[1]:
+                #self.landing = True
+            #else: 
+                #self.landing = False
 
-
-            
-            
 
 def redrawGameWindow():
     global walkCount        #defines the variable in the whole code
@@ -172,7 +173,7 @@ def redrawGameWindow():
     win.blit(text, (380,10))
     man.draw(win)          # Player
     goblin.draw(win)
-    platform1.draw(win)
+    #platform1.draw(win)
     for bullet in bullets:
         bullet.draw(win) 
 
@@ -182,7 +183,7 @@ def redrawGameWindow():
 font = pygame.font.SysFont('comicsans', 30, True) #(font, size, bold, italicized)
 man = player(300, 410, 64, 64)  # Character Specs (x,y,width,height)
 goblin = enemy(100, 410, 64, 64, 450)
-platform1 = platforms(100, 350, 80, 10)
+#platform1 = platforms(100, 360 + 64, 80, 10)
 shootCount = 0
 bullets =  []
 run = True
@@ -221,7 +222,14 @@ while run:
                 man.hit()
                 score -= 5
 
-
+    #if man.x < platform1.hitbox[0] + platform1.hitbox[2] and man.x + man.width > platform1.hitbox[0]:
+            #if man.y + man.height == platform1.hitbox[1]:
+               # man.isJump = False
+                #man.y = platform1.hitbox[1]
+               # print("wooop")
+                #if keys[pygame.K_UP]:
+                   # man.isJump = True */
+                
 
     keys = pygame.key.get_pressed()
 
